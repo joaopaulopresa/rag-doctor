@@ -199,9 +199,11 @@ async def build_summary(
     """Compute the totals and the prescription of an examination from its cases."""
     cases = (
         await db.scalars(
-            select(models.ExaminationCase).where(
-                models.ExaminationCase.examination_id == examination.id
-            )
+            select(models.ExaminationCase)
+            .where(models.ExaminationCase.examination_id == examination.id)
+            # Question order, as in the before/after comparison, so the same questions give
+            # the same bootstrap interval on both pages.
+            .order_by(models.ExaminationCase.question_id)
         )
     ).all()
     outcomes = [Outcome(case.outcome) for case in cases if case.outcome != ERROR]
