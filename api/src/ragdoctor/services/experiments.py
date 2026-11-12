@@ -4,18 +4,20 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import polars as pl
 import ragbench as rb
 from pydantic import BaseModel, ConfigDict, Field
 from ragbench.components.postgres import shared_database
 from ragbench.experiment.results import ResultsRepository
-from ragbench.experiment.stats import stratified_sample
+from ragbench.experiment.stats import bootstrap_mean, stratified_sample
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from ragdoctor import models
 from ragdoctor.catalog import Catalog, judge_component
+from ragdoctor.doctor.compare import gain_over
 from ragdoctor.jobs.queue import JobProgress
 from ragdoctor.library import Library, load_library, write_snapshot
 from ragdoctor.rag import Rag
@@ -40,6 +42,7 @@ class ExperimentRequest(BaseModel):
     questions: int | None = Field(default=40, ge=5, le=1000)
     question_ids: list[str] | None = None
     top_configs: int = Field(default=3, ge=1, le=5)
+    diversify: Literal["none", "chunker"] = "chunker"
 
 
 def choose_questions(library: Library, count: int | None, seed: int = 42) -> list[str]:
@@ -88,14 +91,14 @@ def build_config(
         "rerank": {
             "rerankers": components("rerankers", request.rerankers),
             "top_configs": request.top_configs,
-            "diversify": "chunker",
+            "diversify": request.diversify,
             "candidates": 20,
         },
         "answer": {
             "generators": components("generators", request.generators),
             "judge": judge_component(settings.judge_model).model_dump(),
             "top_configs": request.top_configs,
-            "diversify": "chunker",
+            "diversify": request.diversify,
             "questions": questions,
             "context_k": request.context_k,
             "validation_sample": 0,
@@ -124,6 +127,61 @@ def _rows(
     return [{key: _plain(value) for key, value in row.items()} for row in rows]
 
 
+async def _baseline(
+    factory: async_sessionmaker[AsyncSession],
+    examination_id: int,
+    runtime: rb.Runtime,
+    run_id: str,
+    answers: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    """Score the examined configuration like the experiment's rows, and each row against it.
+
+    The examination already judged the current configuration on these questions with the
+    same judge and rubric, so its correctness scores are the baseline; each candidate's gain
+    is paired by question.
+    """
+    async with factory() as db:
+        examination = await db.get(models.Examination, examination_id)
+        cases = (
+            await db.scalars(
+                select(models.ExaminationCase).where(
+                    models.ExaminationCase.examination_id == examination_id
+                )
+            )
+        ).all()
+    if examination is None:
+        return None
+    current = {
+        case.question_id: float(case.data["scores"]["correctness"]) / 2
+        for case in cases
+        if case.outcome not in ("error", "wrong_gold") and case.data.get("scores")
+    }
+    scored: dict[str, dict[str, float]] = {}
+    for row in await runtime.results.results(run_id, 3):
+        scores = row.data.get("scores")
+        if isinstance(scores, dict) and "correctness" in scores:
+            scored.setdefault(row.config_key, {})[row.question_id] = (
+                float(scores["correctness"]) / 2
+            )
+    for answer in answers:
+        gain = gain_over(current, scored.get(answer["config_key"], {}))
+        answer["gain"] = _plain(gain.difference.mean) if gain else None
+        answer["gain_low"] = _plain(gain.difference.low) if gain else None
+        answer["gain_high"] = _plain(gain.difference.high) if gain else None
+        answer["gain_significant"] = bool(gain and gain.difference.excludes_zero)
+    if not current:
+        return None
+    interval = bootstrap_mean(list(current.values()), seed=0)
+    return {
+        "examination_id": examination_id,
+        "configuration": str(examination.target.get("display", "")),
+        "correctness": _plain(interval.mean),
+        "correctness_low": _plain(interval.low),
+        "correctness_high": _plain(interval.high),
+        "questions": len(current),
+    }
+
+
 async def run_experiment_job(
     factory: async_sessionmaker[AsyncSession],
     rag: Rag,
@@ -138,6 +196,7 @@ async def run_experiment_job(
         if experiment is None:
             raise rb.ExperimentError(f"experiment {experiment_id} does not exist")
         request = ExperimentRequest.model_validate(experiment.config)
+        examination_id = experiment.examination_id
         library = await load_library(db)
     ids = request.question_ids or choose_questions(library, request.questions)
     wanted = set(ids)
@@ -199,6 +258,9 @@ async def run_experiment_job(
     )
     for row in answers:
         row["spec"] = specs.get(row["config_key"])
+    baseline = None
+    if examination_id is not None:
+        baseline = await _baseline(factory, examination_id, runtime, summary.run_id, answers)
     primary = report.primary_metric
     retrieval_columns = [
         "config_key",
@@ -233,6 +295,7 @@ async def run_experiment_job(
             if recommendation
             else None
         ),
+        "baseline": baseline,
         "paid_usd": summary.paid_usd,
         "failed": summary.failed,
         "seconds": summary.seconds,
