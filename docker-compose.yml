@@ -77,7 +77,7 @@ networks:
   default:
     ipam:
       config:
-        - subnet: 10.214.3.0/24
+        - subnet: ${SUBNET:-10.214.3.0/24}
 
 volumes:
   db-data:
