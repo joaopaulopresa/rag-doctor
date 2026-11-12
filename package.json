@@ -1,0 +1,13 @@
+{
+  "name": "rag-doctor-e2e",
+  "private": true,
+  "description": "End-to-end tests and scripted demo recordings for RAG Doctor.",
+  "scripts": {
+    "e2e": "playwright test --project=e2e",
+    "demo": "bash e2e/demo/record.sh"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.0",
+    "@types/node": "^22.20.5"
+  }
+}
