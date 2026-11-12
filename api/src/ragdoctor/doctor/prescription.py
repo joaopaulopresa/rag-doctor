@@ -43,6 +43,8 @@ class Plan:
         rerankers: Rerankers tried on the best retrieval configurations (stage 2).
         generators: Generators tried on the best configurations, scored by the judge (stage 3).
         context_k: Passages given to the generator in stage 3.
+        diversify: How stage 3 picks its configurations: ``chunker`` keeps the best of each
+            chunker, ``none`` the best overall (used when every candidate shares one chunker).
     """
 
     focus: str
@@ -53,6 +55,7 @@ class Plan:
     rerankers: list[str]
     generators: list[str]
     context_k: int
+    diversify: str = "chunker"
 
 
 @dataclass(slots=True)
@@ -113,8 +116,9 @@ def plan_for(outcome: Outcome, current: Selection, catalog: Catalog) -> Plan | N
         return Plan(
             focus="ranking",
             description=(
-                "Keeps the current retrieval, tries the offered rerankers and gives the "
-                f"generator {context_k} passages instead of {current.top_k}."
+                "Keeps the current retrieval and gives the generator "
+                f"{context_k} passages instead of {current.top_k}, with and without each "
+                "offered reranker."
             ),
             chunkers=chunkers,
             embedders=embedders,
@@ -122,6 +126,7 @@ def plan_for(outcome: Outcome, current: Selection, catalog: Catalog) -> Plan | N
             rerankers=_cheap_rerankers(catalog),
             generators=[generator],
             context_k=context_k,
+            diversify="none",
         )
     if outcome in (Outcome.IGNORED, Outcome.UNSUPPORTED):
         chunkers, embedders, modes = _retrieval(current, catalog)

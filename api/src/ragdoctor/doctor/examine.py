@@ -251,6 +251,7 @@ async def build_summary(
                         "rerankers": item.plan.rerankers,
                         "generators": item.plan.generators,
                         "context_k": item.plan.context_k,
+                        "diversify": item.plan.diversify,
                     }
                     if item.plan
                     else None

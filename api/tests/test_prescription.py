@@ -75,6 +75,9 @@ def test_ranked_low_keeps_retrieval_and_measures_rerankers_with_more_context() -
     )
     assert plan.rerankers == ["cohere-rerank-5-fast"]
     assert plan.context_k > FIRST_BUILD.top_k
+    # Both the plain and the reranked retrieval reach the answer stage, so "more context"
+    # and "reranker plus more context" are measured separately.
+    assert plan.diversify == "none"
 
 
 def test_generator_failures_keep_retrieval_and_compare_every_generator() -> None:
@@ -82,6 +85,7 @@ def test_generator_failures_keep_retrieval_and_compare_every_generator() -> None
     first, second = prescribe(summary, current=TUNED, catalog=CATALOG, external=False)
     assert first.plan is not None
     assert first.plan.focus == "generation"
+    assert first.plan.diversify == "chunker"
     assert first.plan.chunkers == ["context-header"]
     assert first.plan.rerankers == ["cohere-rerank-5-fast"]
     assert set(first.plan.generators) == {option.id for option in CATALOG.generators}

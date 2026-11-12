@@ -273,6 +273,7 @@ async def run_prescription(
         rerankers=plan["rerankers"],
         generators=plan["generators"],
         context_k=plan["context_k"],
+        diversify=plan.get("diversify", "chunker"),
         questions=None,
         question_ids=list(row.question_ids),
     )
