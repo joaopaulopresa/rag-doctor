@@ -26,6 +26,7 @@ ragdoctor = "ragdoctor.cli:main"
 
 [dependency-groups]
 dev = [
+    "asgi-lifespan>=2.1.0",
     "pytest>=8.2",
     "pytest-asyncio>=0.23",
     "ruff>=0.6",
