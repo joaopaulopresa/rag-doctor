@@ -12,6 +12,7 @@ test("chat: three questions, each citation opens its source passage", async ({ b
   const d = await Director.start(browser, baseURL!, "chat");
   const { page } = d;
   await page.goto("/");
+  d.mark("hero_start");
   await expect(page.getByRole("heading", { name: "Ask the document library" })).toBeVisible();
   await d.caption("Ask questions about 54 contracts, NDAs and privacy policies.", 2400);
   await d.screenshot("chat-start.png");
@@ -19,12 +20,14 @@ test("chat: three questions, each citation opens its source passage", async ({ b
   const answered = (n: number) => expect(page.getByRole("button", { name: "Helpful", exact: true })).toHaveCount(n, { timeout: 120_000 });
   const lastTurn = () => page.locator("article.turn").last();
 
-  // 1. A suggested question.
+  // 1. A suggested question. From the page load to here is the README's hero animation.
   await d.click(page.getByRole("button", { name: /Viber Messenger/ }));
   await answered(1);
   await d.caption("The answer cites the passages it used.", 2200);
   await d.click(lastTurn().locator("button.cite").first());
   await d.caption("A citation opens the passage, highlighted in its document.", 2800);
+  await d.pause(1500);
+  d.mark("hero_end");
   await d.screenshot("chat-citation.png");
   await d.hideCaption();
 

@@ -3,7 +3,7 @@
  * target, click ripples and captions. Videos are recorded per demo, after its setup.
  */
 import type { Browser, BrowserContext, Locator, Page } from "@playwright/test";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 export const OUT = join(__dirname, "output");
@@ -56,6 +56,8 @@ const OVERLAY = `
 
 export class Director {
   private position = { x: 640, y: 360 };
+  private readonly started = Date.now();
+  private readonly marks: Record<string, number> = {};
 
   private constructor(
     readonly context: BrowserContext,
@@ -76,6 +78,11 @@ export class Director {
     await context.addInitScript(OVERLAY);
     const page = await context.newPage();
     return new Director(context, page, name);
+  }
+
+  /** Remember the current time in the video, for cutting clips such as the hero animation. */
+  mark(name: string) {
+    this.marks[name] = (Date.now() - this.started) / 1000;
   }
 
   async pause(ms: number) {
@@ -144,5 +151,6 @@ export class Director {
     const video = this.page.video();
     await this.context.close();
     await video?.saveAs(join(OUT, `${this.name}.webm`));
+    writeFileSync(join(OUT, `${this.name}.marks.json`), JSON.stringify(this.marks, null, 2));
   }
 }
