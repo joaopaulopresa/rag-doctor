@@ -98,3 +98,47 @@ def compare(
         questions=len(common),
         excluded=len(set(before) | set(after)) - len(common),
     )
+
+
+@dataclass(frozen=True, slots=True)
+class Gain:
+    """A candidate configuration measured against the current one on the same questions.
+
+    Attributes:
+        questions: Questions both were scored on.
+        baseline: Mean score of the current configuration on those questions.
+        candidate: Mean score of the candidate on those questions.
+        difference: ``candidate - baseline`` with a paired bootstrap interval.
+    """
+
+    questions: int
+    baseline: float
+    candidate: float
+    difference: Interval
+
+
+def gain_over(
+    baseline: Mapping[str, float],
+    candidate: Mapping[str, float],
+    *,
+    samples: int = 2000,
+    confidence: float = 0.95,
+    seed: int = 0,
+) -> Gain | None:
+    """Return the paired gain of ``candidate`` over ``baseline`` (scores by question id).
+
+    Returns ``None`` when the two share no question.
+    """
+    common = sorted(set(baseline) & set(candidate))
+    if not common:
+        return None
+    first = [candidate[q] for q in common]
+    second = [baseline[q] for q in common]
+    return Gain(
+        questions=len(common),
+        baseline=sum(second) / len(common),
+        candidate=sum(first) / len(common),
+        difference=paired_bootstrap(
+            first, second, samples=samples, confidence=confidence, seed=seed
+        ),
+    )

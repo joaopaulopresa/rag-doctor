@@ -40,3 +40,22 @@ def test_rates_and_paired_difference_have_intervals() -> None:
 def test_comparing_nothing_in_common_is_an_error() -> None:
     with pytest.raises(ValueError, match="no question"):
         compare({"a": C}, {"b": C})
+
+
+def test_gain_over_baseline_pairs_questions_answered_by_both() -> None:
+    from ragdoctor.doctor.compare import gain_over
+
+    baseline = {f"q{i}": 0.0 for i in range(30)} | {"only-baseline": 1.0}
+    candidate = {f"q{i}": 1.0 for i in range(30)} | {"only-candidate": 0.0}
+    gain = gain_over(baseline, candidate, seed=1)
+    assert gain.questions == 30
+    assert gain.baseline == pytest.approx(0.0)
+    assert gain.candidate == pytest.approx(1.0)
+    assert gain.difference.mean == pytest.approx(1.0)
+    assert gain.difference.excludes_zero
+
+
+def test_gain_over_baseline_without_common_questions_is_none() -> None:
+    from ragdoctor.doctor.compare import gain_over
+
+    assert gain_over({"a": 1.0}, {"b": 1.0}) is None
