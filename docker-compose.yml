@@ -1,0 +1,88 @@
+name: rag-doctor
+
+x-app: &app
+  build:
+    context: ./api
+    secrets:
+      - ragbench_ssh_key
+  image: rag-doctor-api
+  env_file: .env
+  environment:
+    DATABASE_URL: postgresql://ragdoctor:ragdoctor@db:5432/ragdoctor
+    DATA_DIR: /data
+    MOCK_RAG_URL: http://mock-rag:8000
+  volumes:
+    - app-data:/data
+  depends_on:
+    db:
+      condition: service_healthy
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ragdoctor
+      POSTGRES_PASSWORD: ragdoctor
+      POSTGRES_DB: ragdoctor
+    ports:
+      - "127.0.0.1:${DB_PORT:-54330}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ragdoctor -d ragdoctor"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  api:
+    <<: *app
+    command: ["sh", "-c", "alembic upgrade head && ragdoctor bootstrap && uvicorn ragdoctor.main:app --host 0.0.0.0 --port 8000"]
+    ports:
+      - "127.0.0.1:${API_PORT:-8310}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  worker:
+    <<: *app
+    command: ["ragdoctor", "worker"]
+    depends_on:
+      api:
+        condition: service_healthy
+
+  mock-rag:
+    build: ./mock_rag
+    env_file: .env
+    environment:
+      CACHE_DIR: /cache
+    volumes:
+      - mock-cache:/cache
+    ports:
+      - "127.0.0.1:${MOCK_RAG_PORT:-8311}:8000"
+
+  web:
+    build: ./web
+    ports:
+      - "127.0.0.1:${WEB_PORT:-5310}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+# This machine's default address pool is nearly exhausted, so the subnet is explicit.
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 10.214.3.0/24
+
+volumes:
+  db-data:
+  app-data:
+  mock-cache:
+
+# Build-time only: lets the image install ragbench from its private repository.
+secrets:
+  ragbench_ssh_key:
+    file: ${RAGBENCH_SSH_KEY:-${HOME}/.ssh/id_ed25519}
