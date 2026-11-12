@@ -155,6 +155,15 @@ def prescribe(
             stage=STAGES[outcome],
             candidates=list(CANDIDATES[outcome]),
         )
+        if external and outcome is Outcome.NOT_RETRIEVED:
+            # Without the candidates, a passage cut from the context looks the same as one
+            # that was never found.
+            item.candidates += ["a reranker", "more passages in the context"]
+            item.notes.append(
+                "The system does not return its retrieval candidates, so a gold passage that was "
+                "found and then ranked out of the context cannot be told apart from one that "
+                "was never found."
+            )
         if not external and current is not None:
             plan = plan_for(outcome, current, catalog)
             if plan is not None and plan.focus in planned:

@@ -102,3 +102,16 @@ def test_no_failures_means_no_prescription() -> None:
         prescribe(summarise(outcomes(correct=4)), current=TUNED, catalog=CATALOG, external=False)
         == []
     )
+
+
+def test_external_not_retrieved_says_ranking_cannot_be_ruled_out() -> None:
+    summary = summarise(outcomes(not_retrieved=2))
+    [item] = prescribe(summary, current=None, catalog=CATALOG, external=True)
+    assert any("candidates" in note for note in item.notes)
+    assert "a reranker" in item.candidates
+
+
+def test_own_not_retrieved_has_no_such_caveat() -> None:
+    summary = summarise(outcomes(not_retrieved=2))
+    [item] = prescribe(summary, current=FIRST_BUILD, catalog=CATALOG, external=False)
+    assert item.notes == []

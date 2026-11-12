@@ -240,6 +240,7 @@ async def build_summary(
                 "stage": item.stage,
                 "candidates": item.candidates,
                 "same_plan_as": item.same_plan_as.value if item.same_plan_as else None,
+                "notes": item.notes,
                 "plan": (
                     {
                         "focus": item.plan.focus,

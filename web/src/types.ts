@@ -80,6 +80,7 @@ export interface PrescriptionItem {
   stage: string;
   candidates: string[];
   same_plan_as: string | null;
+  notes?: string[];
   plan: {
     focus: string;
     description: string;

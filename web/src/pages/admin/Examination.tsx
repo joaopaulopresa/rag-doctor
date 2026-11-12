@@ -108,6 +108,11 @@ function PrescriptionRow({
       <p>
         Candidate fixes to measure: {item.candidates.join(", ")}.
       </p>
+      {item.notes?.map((note) => (
+        <p key={note} className="faint">
+          {note}
+        </p>
+      ))}
       {item.plan && (
         <div className="rx-plan">
           <p className="muted">{item.plan.description}</p>
