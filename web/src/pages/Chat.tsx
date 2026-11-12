@@ -24,6 +24,7 @@ interface Turn {
   invalid: number[];
   messageId?: number;
   seconds?: number;
+  cached?: boolean;
   feedback?: 1 | -1;
   error?: string;
 }
@@ -80,8 +81,15 @@ export default function Chat() {
             passages: event.passages as Passage[],
             invalid: event.invalid_citations as number[],
           });
-        else if (event.type === "done")
-          update(id, { step: "done", messageId: Number(event.message_id), seconds: (performance.now() - started) / 1000 });
+        else if (event.type === "done") {
+          const usage = event.usage as { paid_usd: number; cost_usd: number };
+          update(id, {
+            step: "done",
+            messageId: Number(event.message_id),
+            seconds: (performance.now() - started) / 1000,
+            cached: usage.paid_usd === 0 && usage.cost_usd > 0,
+          });
+        }
         else if (event.type === "error") update(id, { step: "error", error: String(event.message) });
       });
     } catch (error) {
@@ -170,7 +178,10 @@ export default function Chat() {
                   )}
                   {turn.step === "done" && (
                     <div className="turn-foot row">
-                      <span className="faint">{turn.seconds?.toFixed(1)} s</span>
+                      <span className="faint">
+                        {turn.cached ? "Answered from the cache, " : ""}
+                        {turn.seconds?.toFixed(1)} s
+                      </span>
                       <span className="grow" />
                       {turn.feedback ? (
                         <span className="faint">
