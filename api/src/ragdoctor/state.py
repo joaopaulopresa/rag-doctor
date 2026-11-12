@@ -41,9 +41,7 @@ async def save_configuration(
 
 async def active_activation(db: AsyncSession) -> models.Activation | None:
     """Return the newest activation: the configuration the chat runs on."""
-    return await db.scalar(
-        select(models.Activation).order_by(models.Activation.id.desc()).limit(1)
-    )
+    return await db.scalar(select(models.Activation).order_by(models.Activation.id.desc()).limit(1))
 
 
 async def get_state(db: AsyncSession, key: str) -> dict[str, Any]:
@@ -55,9 +53,7 @@ async def get_state(db: AsyncSession, key: str) -> dict[str, Any]:
 async def set_state(db: AsyncSession, key: str, value: dict[str, Any]) -> None:
     """Store ``value`` under ``key``."""
     statement = insert(models.AppState).values(key=key, value=value)
-    await db.execute(
-        statement.on_conflict_do_update(index_elements=["key"], set_={"value": value})
-    )
+    await db.execute(statement.on_conflict_do_update(index_elements=["key"], set_={"value": value}))
 
 
 async def live_collection(db: AsyncSession) -> str | None:
