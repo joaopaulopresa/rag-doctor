@@ -84,7 +84,7 @@ async def create_examination(body: ExaminationRequest, db: Db, _: Admin) -> dict
     else:
         question_ids = choose_questions(library, min(body.questions, len(library.questions)))
     if not question_ids:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "The question set is empty.")
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "The question set is empty.")
     target: dict[str, Any] = {"baseline_id": baseline.id if baseline else None}
     configuration_id = external_id = None
     if body.target == "own":
@@ -262,7 +262,7 @@ async def run_prescription(
         (p for p in row.summary.get("prescription", []) if p["outcome"] == body.outcome), None
     )
     if item is None or not item.get("plan"):
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "No experiment for this item.")
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "No experiment for this item.")
     plan = item["plan"]
     request = ExperimentRequest(
         name=f"Doctor: {item['label'].lower()} ({plan['focus']})",
@@ -302,7 +302,7 @@ async def _comparison(db: Db, before_id: int, after_id: int) -> tuple[Any, ...]:
     try:
         result = compare(outcomes(before_id), outcomes(after_id))
     except ValueError as error:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(error)) from error
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from error
     texts = {r.question_id: str(r.data.get("question", "")) for r in rows}
     return before, after, result, texts
 

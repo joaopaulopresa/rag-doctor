@@ -148,14 +148,14 @@ async def update_question(
         row.document_id = body.document_id
     document = await db.get(models.Document, row.document_id) if row.document_id else None
     if row.document_id and document is None:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "No such document.")
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "No such document.")
     if body.evidence is not None:
         if document is None:
-            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Choose the document first.")
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Choose the document first.")
         try:
             row.spans = [locate_evidence(document.text, body.evidence)]
         except ValueError as error:
-            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(error)) from error
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from error
         row.source = document.source
     if body.text is not None:
         row.text = body.text.strip()
@@ -164,7 +164,7 @@ async def update_question(
     if body.status is not None:
         if body.status == "accepted" and (document is None or not row.spans):
             raise HTTPException(
-                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
                 "A question needs a document and its gold evidence before it can be accepted.",
             )
         row.status = body.status
@@ -209,4 +209,4 @@ async def import_questions(file: UploadFile, db: Db, _: Admin) -> dict[str, obje
         data = json.loads(await file.read())
         return await import_file(db, data)
     except (ValueError, UnicodeDecodeError) as error:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(error)) from error
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from error

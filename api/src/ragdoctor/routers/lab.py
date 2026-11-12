@@ -97,8 +97,8 @@ def resolve_spec(body: Apply) -> rb.PipelineConfig:
                 raise ValueError("the configuration uses a component that is not in the catalogue")
             return spec
     except (ValueError, rb.ConfigError) as error:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(error)) from error
-    raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Give a selection or a spec.")
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from error
+    raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Give a selection or a spec.")
 
 
 @router.post("/configurations/apply")
@@ -112,7 +112,7 @@ async def apply(body: Apply, db: Db, rag: RagDep, admin: Admin) -> dict[str, Any
         configuration = await save_configuration(db, spec, name=body.name, origin=body.origin)
     spec = spec_of(configuration)
     if spec.generator is None:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "The chat needs a generator.")
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "The chat needs a generator.")
     db.add(
         models.Activation(
             configuration_id=configuration.id,
@@ -138,7 +138,7 @@ async def playground(body: PlaygroundRequest, db: Db, rag: RagDep, _: Admin) -> 
     try:
         spec = get_catalog().pipeline(body.selection)
     except (ValueError, rb.ConfigError) as error:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(error)) from error
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from error
     collection = await live_collection(db)
     if collection is None:
         raise HTTPException(status.HTTP_409_CONFLICT, "The library is not indexed yet.")
@@ -170,7 +170,7 @@ async def build_index(body: Selection, db: Db, _: Admin) -> dict[str, Any]:
     try:
         spec = get_catalog().pipeline(body)
     except (ValueError, rb.ConfigError) as error:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(error)) from error
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from error
     job = await enqueue(
         db, "index", {"spec": spec.model_dump(mode="json")}, title=f"Index for {spec.display}"
     )
@@ -215,7 +215,7 @@ async def start_experiment(
             for option_id in ids:
                 catalog.option(kind, option_id)
     except ValueError as error:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(error)) from error
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from error
     experiment = models.Experiment(
         name=request.name,
         purpose=request.purpose,
