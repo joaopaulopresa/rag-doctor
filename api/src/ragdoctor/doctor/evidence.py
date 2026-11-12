@@ -72,7 +72,14 @@ def holds_gold(passage: Passage, gold: Gold) -> bool:
             min(end, gold_end) > max(start, gold_start) for gold_start, gold_end in gold.spans
         )
     text = _normalise(passage.text)
-    return any(_shares_text(text, _normalise(gold_text)) for gold_text in gold.texts)
+    fragments = [_normalise(gold_text) for gold_text in gold.texts]
+    long = [fragment for fragment in fragments if len(fragment) >= _MIN_SHARED]
+    if long:
+        # A short fragment of a split evidence ("b. Was") occurs by chance in many passages,
+        # so only the substantial fragments count.
+        return any(_shares_text(text, fragment) for fragment in long)
+    # Evidence made only of short fragments must appear whole, every fragment of it.
+    return bool(text) and all(fragment and fragment in text for fragment in fragments)
 
 
 def first_gold_rank(passages: Sequence[Passage], gold: Gold) -> int | None:

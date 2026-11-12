@@ -50,3 +50,32 @@ def test_first_gold_rank_is_one_based_and_none_when_absent() -> None:
     ]
     assert first_gold_rank(passages, GOLD) == 2
     assert first_gold_rank(passages[:1], GOLD) is None
+
+
+SPLIT = Gold(
+    document_id="nda.txt",
+    spans=((10, 60), (70, 76), (80, 160)),
+    texts=(
+        "6. The conditions of Paragraph 4 hereof shall not apply to information which:",
+        "b. Was",
+        "(iii) is developed by the receiving Party independent of such information",
+    ),
+)
+
+
+def test_a_short_gold_fragment_alone_does_not_make_a_passage_hold_gold() -> None:
+    # Six characters can occur anywhere; they must not count as the evidence.
+    assert not holds_gold(Passage(text="The Seller b. Was paid in full."), SPLIT)
+
+
+def test_a_long_gold_fragment_of_a_split_evidence_is_enough() -> None:
+    text = (
+        "Party (iii) is developed by the receiving Party independent of such information received"
+    )
+    assert holds_gold(Passage(text=text), SPLIT)
+
+
+def test_gold_made_only_of_short_fragments_is_matched_as_a_whole() -> None:
+    tiny = Gold(document_id="d", spans=((0, 3), (5, 8)), texts=("Yes", "No."))
+    assert holds_gold(Passage(text="Answer: Yes or No. as stated"), tiny)
+    assert not holds_gold(Passage(text="Yes, but nothing else"), tiny)
