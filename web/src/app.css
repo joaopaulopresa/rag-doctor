@@ -191,3 +191,6 @@ span.cite.invalid { display: inline-flex; align-items: center; justify-content: 
   .trace-stage { margin-right: 0; }
   .trace-stage:not(:last-child)::after { right: auto; left: 32px; top: auto; bottom: -15px; width: 2px; height: 14px; }
 }
+
+.baseline-row td { background: #f8fafb; color: var(--ink-soft); }
+.gain-significant { color: var(--o-correct); font-weight: 600; }

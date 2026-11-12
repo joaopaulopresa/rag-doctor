@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { api, pct } from "../../api";
+import { api, pct, points } from "../../api";
 import { ConfigLine } from "../../components/ConfigLine";
 import { OutcomeTag } from "../../components/OutcomeStrip";
 import type { ConfigurationDescription, Examination } from "../../types";
@@ -30,11 +30,6 @@ const CHANGES: [string, string][] = [
   ["still_wrong", "Still wrong"],
   ["still_correct", "Still correct"],
 ];
-
-function points(value: number) {
-  const n = 100 * value;
-  return `${n >= 0 ? "+" : ""}${n.toFixed(1)}`;
-}
 
 export default function Compare() {
   const [params] = useSearchParams();
@@ -83,7 +78,7 @@ export default function Compare() {
           {data.before.target_kind === "own" && <ConfigLine config={data.before.target as unknown as ConfigurationDescription} />}
         </div>
         <div className={`ba-diff${diff.significant ? " significant" : ""}`}>
-          <b>{points(diff.mean)} pts</b>
+          <b>{points(diff.mean)}</b>
           <span>
             {points(diff.low)} to {points(diff.high)}
           </span>

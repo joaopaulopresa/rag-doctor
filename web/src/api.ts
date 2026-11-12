@@ -79,3 +79,10 @@ export function pct(value: number | null | undefined, digits = 0): string {
 export function usd(value: number | null | undefined, digits = 4): string {
   return value === null || value === undefined ? "–" : `$${value.toFixed(digits)}`;
 }
+
+/** A difference of shares as signed percentage points, for example "+16.7 pts". */
+export function points(value: number | null | undefined, digits = 1): string {
+  if (value === null || value === undefined) return "–";
+  const n = 100 * value;
+  return `${n >= 0 ? "+" : ""}${n.toFixed(digits)} pts`;
+}

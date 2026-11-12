@@ -153,6 +153,19 @@ export interface ExperimentRow {
   tied_with_best: boolean;
   gap_to_best: number;
   spec: Record<string, unknown> | null;
+  gain?: number | null;
+  gain_low?: number | null;
+  gain_high?: number | null;
+  gain_significant?: boolean;
+}
+
+export interface Baseline {
+  examination_id: number;
+  configuration: string;
+  correctness: number;
+  correctness_low: number;
+  correctness_high: number;
+  questions: number;
 }
 
 export interface Experiment {
@@ -171,6 +184,7 @@ export interface Experiment {
     answers?: ExperimentRow[];
     retrieval?: Record<string, number | string | null>[];
     recommendation?: { config_key: string; display: string; reason: string; spec: Record<string, unknown> | null } | null;
+    baseline?: Baseline | null;
     paid_usd?: number;
     failed?: number;
   };

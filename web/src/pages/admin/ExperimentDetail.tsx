@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { api, pct, usd } from "../../api";
+import { api, pct, points, usd } from "../../api";
 import { JobProgress } from "../../components/JobProgress";
 import type { Experiment, ExperimentRow } from "../../types";
 
@@ -125,6 +125,7 @@ export default function ExperimentDetail() {
                     <th>Configuration</th>
                     <th className="num">Judge correctness</th>
                     <th className="num">95% interval</th>
+                    {s.baseline && <th className="num">Gain over current</th>}
                     <th className="num">Gold in context</th>
                     <th className="num">Per 1,000 answers</th>
                     <th className="num">Median latency</th>
@@ -132,6 +133,23 @@ export default function ExperimentDetail() {
                   </tr>
                 </thead>
                 <tbody>
+                  {s.baseline && (
+                    <tr className="baseline-row">
+                      <td>
+                        Current: {s.baseline.configuration}
+                        <div className="faint">from examination #{s.baseline.examination_id}</div>
+                      </td>
+                      <td className="num">{pct(s.baseline.correctness, 1)}</td>
+                      <td className="num faint">
+                        {pct(s.baseline.correctness_low)} to {pct(s.baseline.correctness_high)}
+                      </td>
+                      <td className="num faint">baseline</td>
+                      <td className="num faint">–</td>
+                      <td className="num faint">–</td>
+                      <td className="num faint">–</td>
+                      <td />
+                    </tr>
+                  )}
                   {s.answers.map((a) => (
                     <tr key={a.config_key} className={a.config_key === rec?.config_key ? "chosen" : ""}>
                       <td>
@@ -142,6 +160,14 @@ export default function ExperimentDetail() {
                       <td className="num faint">
                         {pct(a.correctness_low)} to {pct(a.correctness_high)}
                       </td>
+                      {s.baseline && (
+                        <td className="num">
+                          <span className={a.gain_significant ? "gain-significant" : ""}>{points(a.gain)}</span>
+                          <div className="faint">
+                            {points(a.gain_low)} to {points(a.gain_high)}
+                          </div>
+                        </td>
+                      )}
                       <td className="num">{pct(a.gold_in_context)}</td>
                       <td className="num">{usd(a.cost_per_1k_answers_usd, 3)}</td>
                       <td className="num">{a.latency_p50_s.toFixed(1)} s</td>

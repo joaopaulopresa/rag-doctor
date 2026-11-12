@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { api, pct, usd } from "../../api";
+import { api, pct, points, usd } from "../../api";
 import { ConfigLine } from "../../components/ConfigLine";
 import { JobProgress } from "../../components/JobProgress";
 import { OUTCOME_LABELS, OutcomeTag, OutcomeStrip } from "../../components/OutcomeStrip";
@@ -24,6 +24,7 @@ function Recommendation({ experiment, onApplied }: { experiment: Detail["experim
   const [applied, setApplied] = useState("");
   const rec = experiment.summary.recommendation;
   const rows = experiment.summary.answers ?? [];
+  const baseline = experiment.summary.baseline;
   if (!rec) return null;
   const apply = async () => {
     setBusy(true);
@@ -43,19 +44,33 @@ function Recommendation({ experiment, onApplied }: { experiment: Detail["experim
       <table className="compact-table">
         <thead>
           <tr>
-            <th>Configuration measured on these questions</th>
+            <th>Configuration, measured on these questions</th>
             <th className="num">Judge correctness</th>
-            <th className="num">95% interval</th>
+            <th className="num">Gain over current</th>
             <th className="num">Per 1,000 answers</th>
           </tr>
         </thead>
         <tbody>
+          {baseline && (
+            <tr className="baseline-row">
+              <td>
+                Current: {baseline.configuration}
+                <div className="faint">from this examination</div>
+              </td>
+              <td className="num">{pct(baseline.correctness, 1)}</td>
+              <td className="num faint">baseline</td>
+              <td className="num faint">–</td>
+            </tr>
+          )}
           {rows.map((row) => (
             <tr key={row.config_key} className={row.config_key === rec.config_key ? "chosen" : ""}>
               <td>{row.configuration}</td>
               <td className="num">{pct(row.correctness, 1)}</td>
-              <td className="num faint">
-                {pct(row.correctness_low)} to {pct(row.correctness_high)}
+              <td className="num">
+                <span className={row.gain_significant ? "gain-significant" : ""}>{points(row.gain)}</span>
+                <div className="faint">
+                  {points(row.gain_low)} to {points(row.gain_high)}
+                </div>
               </td>
               <td className="num">{usd(row.cost_per_1k_answers_usd, 2)}</td>
             </tr>
@@ -75,7 +90,8 @@ function Recommendation({ experiment, onApplied }: { experiment: Detail["experim
         )}
       </div>
       <p className="faint">
-        Judge correctness is the mean of the judge's 0 to 2 score, scaled to 0 to 100%. <Link to={`/admin/experiments/${experiment.id}`}>Full experiment</Link>
+        Judge correctness is the mean of the judge's 0 to 2 correctness score, scaled to 0 to 100%. The gain is paired by question, with a
+        95% bootstrap interval. <Link to={`/admin/experiments/${experiment.id}`}>Full experiment</Link>
       </p>
     </div>
   );
