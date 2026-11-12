@@ -54,6 +54,8 @@ export function OutcomeStrip({ counts, errors = 0, selected, onSelect, legend = 
             key={outcome}
             type="button"
             className={`legend-item${selected === outcome ? " on" : ""}`}
+            aria-label={`${OUTCOME_LABELS[outcome]}: ${n} (${Math.round((100 * n) / total)}%)`}
+            aria-pressed={onSelect ? selected === outcome : undefined}
             onClick={() => onSelect?.(selected === outcome ? null : outcome)}
             disabled={!onSelect}
           >
