@@ -1,0 +1,52 @@
+"""Process settings, read once from the environment."""
+
+from __future__ import annotations
+
+from functools import lru_cache
+from pathlib import Path
+
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    """Everything the API and the worker read from the environment."""
+
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    database_url: str = "postgresql://ragdoctor:ragdoctor@localhost:54330/ragdoctor"
+    engine_schema: str = Field(
+        default="ragbench", description="Schema of the engine's cache, indexes and run results."
+    )
+    data_dir: Path = Path(".data")
+    catalog_path: Path = Path(__file__).resolve().parents[2] / "config" / "catalog.yaml"
+
+    openrouter_api_key: str = ""
+    judge_model: str = "deepseek/deepseek-v4.1-flash-1017"
+    chat_model: str = "ibm-granite/granite-4.2-8b"
+    seed_model: str = "meta-llama/llama-3.1-8b-instruct"
+
+    admin_email: str = "admin@ragdoctor.demo"
+    admin_password: str = "doctor-admin"
+    user_email: str = "reader@ragdoctor.demo"
+    user_password: str = "doctor-reader"
+    jwt_secret: str = "change-me-in-production"
+    session_hours: int = 12
+    chat_requires_login: bool = False
+    cookie_secure: bool = False
+
+    @property
+    def sqlalchemy_url(self) -> str:
+        """The database URL with the psycopg 3 driver SQLAlchemy needs."""
+        return self.database_url.replace("postgresql://", "postgresql+psycopg://", 1)
+
+    @property
+    def engine_env(self) -> dict[str, str]:
+        """Secrets handed to the engine (it reads every ``*_API_KEY`` entry)."""
+        return {"OPENROUTER_API_KEY": self.openrouter_api_key}
+
+
+@lru_cache
+def get_settings() -> Settings:
+    """Return the process settings."""
+    return Settings()
