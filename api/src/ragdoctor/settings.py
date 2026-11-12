@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     data_dir: Path = Path(".data")
     catalog_path: Path = Path(__file__).resolve().parents[2] / "config" / "catalog.yaml"
 
+    mock_rag_url: str = "http://localhost:8311"
     openrouter_api_key: str = ""
     judge_model: str = "deepseek/deepseek-v4.1-flash-1017"
     chat_model: str = "ibm-granite/granite-4.2-8b"
