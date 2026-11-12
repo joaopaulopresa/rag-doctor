@@ -45,13 +45,21 @@ test("the playground answers one question with two configurations side by side",
   await expect(page.getByRole("heading", { name: "Configuration B" })).toBeVisible();
 });
 
-test("a configuration from the history can be restored and becomes active", async ({ page }) => {
+test("a configuration from the history can be restored and becomes active", async ({ page, request }) => {
+  // Make a history of two: the current configuration, then the same one without a reranker.
+  await apiSignIn(request);
+  const before = await (await request.get("/api/admin/configurations")).json();
+  const selection = before.active.selection;
+  const applied = await request.post("/api/admin/configurations/apply", {
+    data: { selection: { ...selection, reranker: null }, name: "Without reranker", note: "Test" },
+  });
+  expect(applied.ok()).toBeTruthy();
+  await waitForChat(request);
+
   await signIn(page);
   await page.getByRole("link", { name: "Configurations" }).click();
-  const restore = page.getByRole("button", { name: "Restore" }).first();
-  await expect(restore).toBeVisible();
-  const row = page.getByRole("row").filter({ has: restore });
-  const name = (await row.locator("b").first().textContent())!.trim();
-  await restore.click();
-  await expect(page.locator("section").first().getByRole("heading", { name })).toBeVisible();
+  const row = page.getByRole("row").filter({ hasText: before.active.name }).filter({ has: page.getByRole("button", { name: "Restore" }) });
+  await row.getByRole("button", { name: "Restore" }).first().click();
+  await expect(page.locator("section").first().getByRole("heading", { name: before.active.name })).toBeVisible();
+  await waitForChat(request);
 });
