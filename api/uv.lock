@@ -1425,7 +1425,7 @@ wheels = [
 [[package]]
 name = "ragbench"
 version = "0.1.0"
-source = { git = "ssh://git@github.com/joaopaulopresa/rag-bench?rev=v0.1.0#05d1c0d1495c1c08400e766852021e646f49e9b8" }
+source = { git = "ssh://git@github.com/joaopaulopresa/rag-bench?rev=v0.1.0#84a184858d69fd8c4861b1b505dc4a361ed5f512" }
 dependencies = [
     { name = "httpx" },
     { name = "langgraph" },
