@@ -1425,7 +1425,7 @@ wheels = [
 [[package]]
 name = "ragbench"
 version = "0.1.0"
-source = { git = "ssh://git@github.com/joaopaulopresa/rag-bench?rev=v0.1.0#84a184858d69fd8c4861b1b505dc4a361ed5f512" }
+source = { git = "https://github.com/joaopaulopresa/rag-bench?rev=v0.1.0#84a184858d69fd8c4861b1b505dc4a361ed5f512" }
 dependencies = [
     { name = "httpx" },
     { name = "langgraph" },
@@ -1482,7 +1482,7 @@ requires-dist = [
     { name = "pyjwt", specifier = ">=2.9" },
     { name = "python-multipart", specifier = ">=0.0.9" },
     { name = "pyyaml", specifier = ">=6.0" },
-    { name = "ragbench", extras = ["pdf"], git = "ssh://git@github.com/joaopaulopresa/rag-bench?rev=v0.1.0" },
+    { name = "ragbench", extras = ["pdf"], git = "https://github.com/joaopaulopresa/rag-bench?rev=v0.1.0" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.30" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
 ]

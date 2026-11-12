@@ -7,8 +7,7 @@ license = "MIT"
 authors = [{ name = "João Paulo" }]
 dependencies = [
     # The engine: chunkers, PostgreSQL search, pipeline, metrics, judge, cache, experiment runner.
-    # SSH while the repository is private; switch to git+https once it is public.
-    "ragbench[pdf] @ git+ssh://git@github.com/joaopaulopresa/rag-bench@v0.1.0",
+    "ragbench[pdf] @ git+https://github.com/joaopaulopresa/rag-bench@v0.1.0",
     "alembic>=1.13",
     "bcrypt>=4.2",
     "fastapi>=0.115",

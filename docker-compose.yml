@@ -1,10 +1,7 @@
 name: rag-doctor
 
 x-app: &app
-  build:
-    context: ./api
-    secrets:
-      - ragbench_ssh_key
+  build: ./api
   image: rag-doctor-api
   env_file: .env
   environment:
@@ -81,8 +78,3 @@ volumes:
   db-data:
   app-data:
   mock-cache:
-
-# Build-time only: lets the image install ragbench from its private repository.
-secrets:
-  ragbench_ssh_key:
-    file: ${RAGBENCH_SSH_KEY:-${HOME}/.ssh/id_ed25519}
