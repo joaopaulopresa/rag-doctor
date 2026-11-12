@@ -1,0 +1,76 @@
+# What the admin may choose from. The pickers in the lab list exactly these options, not the
+# whole OpenRouter catalogue. Each `component` is a ragbench component: registered name + params.
+#
+# Parameters match the ragbench demo experiment, so results are comparable with its report.
+
+chunkers:
+  - id: context-header
+    label: Context header (512 tokens)
+    component: { name: context_header, label: context-header, params: { max_tokens: 512 } }
+  - id: recursive
+    label: Recursive (512 tokens)
+    component: { name: recursive, params: { max_tokens: 512 } }
+  - id: fixed
+    label: Fixed size (512 tokens, 15% overlap)
+    component: { name: fixed, params: { max_tokens: 512, overlap: 0.15 } }
+  - id: parent-child
+    label: Parent-child (1024 / 128 tokens)
+    component:
+      name: parent_child
+      label: parent-child
+      params: { parent_tokens: 1024, child_tokens: 128 }
+
+embedders:
+  - id: text-embedding-3-large
+    label: OpenAI text-embedding-3-large
+    component: { name: openrouter, params: { model: openai/text-embedding-3-large, dimensions: 1024 } }
+  - id: bge-m3
+    label: BAAI bge-m3
+    component: { name: openrouter, params: { model: baai/bge-m3, dimensions: 1024 } }
+
+search_modes: [dense, hybrid, lexical]
+
+rerankers:
+  - id: cohere-rerank-5-fast
+    label: Cohere rerank-5-fast
+    component: { name: openrouter, params: { model: cohere/rerank-5-fast } }
+  - id: qwen3-reranker-8b
+    label: Qwen3 reranker 8B
+    # Rerankers are billed per token of every candidate; this one cost about ten times more
+    # than Cohere in the ragbench demo run. It is never preselected.
+    expensive: true
+    component: { name: openrouter, params: { model: qwen/qwen3-reranker-8b } }
+
+# Reasoning is switched off per request: some of these models return no text otherwise.
+generators:
+  - id: granite-4.2-8b
+    label: IBM Granite 4.2 8B
+    component:
+      name: openrouter
+      params: &generator
+        model: ibm-granite/granite-4.2-8b
+        temperature: 0
+        max_tokens: 400
+        extra_body: { reasoning: { enabled: false } }
+  - id: mistral-small-2603
+    label: Mistral Small 2603
+    component: { name: openrouter, params: { <<: *generator, model: mistralai/mistral-small-2603 } }
+  - id: gemma-4-26b
+    label: Gemma 4 26B
+    component: { name: openrouter, params: { <<: *generator, model: google/gemma-4-26b-a4b-it } }
+  - id: gemma-4-31b
+    label: Gemma 4 31B
+    component: { name: openrouter, params: { <<: *generator, model: google/gemma-4-31b-it } }
+  - id: qwen3.8-27b
+    label: Qwen 3.8 27B
+    component: { name: openrouter, params: { <<: *generator, model: qwen/qwen3.8-27b } }
+
+# The configuration the chat starts on: what the ragbench demo report recommended.
+initial:
+  chunker: context-header
+  embedder: text-embedding-3-large
+  search_mode: dense
+  reranker: cohere-rerank-5-fast
+  generator: granite-4.2-8b
+  top_k: 5
+  candidates: 20
