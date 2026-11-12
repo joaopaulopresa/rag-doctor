@@ -49,12 +49,17 @@ services:
       api:
         condition: service_healthy
 
+  # A deliberately weak RAG service: the external system audited in the demo. It reads the
+  # same public documents from the shared volume, and only needs the model key.
   mock-rag:
     build: ./mock_rag
-    env_file: .env
     environment:
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      SEED_MODEL: ${SEED_MODEL:-meta-llama/llama-3.1-8b-instruct}
+      CORPUS_DIR: /data
       CACHE_DIR: /cache
     volumes:
+      - app-data:/data:ro
       - mock-cache:/cache
     ports:
       - "127.0.0.1:${MOCK_RAG_PORT:-8311}:8000"
