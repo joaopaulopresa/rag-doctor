@@ -7,7 +7,7 @@ from typing import Any
 
 import ragbench as rb
 from ragbench.components.caches import MemoryCache
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ragdoctor import models
@@ -63,6 +63,34 @@ async def load_demo_corpus(db: AsyncSession) -> dict[str, Any]:
         "documents": len(corpus.documents),
         "questions": len(corpus.questions),
     }
+
+
+def ensure_demo_files() -> None:
+    """Download the demo corpus files if they are missing (the mock service reads them too)."""
+    settings = get_settings()
+    rb.load_corpus(DEMO_CORPUS, rb.Resources(cache=MemoryCache(), data_dir=settings.data_dir))
+
+
+async def reset(db: AsyncSession) -> None:
+    """Delete the application's data, keeping users and the engine's cache, indexes and runs.
+
+    Used to bring a demo back to its first state; replaying it then costs nothing.
+    """
+    for table in (
+        "examination_cases",
+        "examinations",
+        "experiments",
+        "external_systems",
+        "chat_messages",
+        "jobs",
+        "activations",
+        "configurations",
+        "questions",
+        "documents",
+        "app_state",
+    ):
+        await db.execute(text(f"DELETE FROM {table}"))
+    await db.commit()
 
 
 async def bootstrap(db: AsyncSession) -> None:

@@ -7,13 +7,21 @@ import logging
 import sys
 
 from ragdoctor.db import dispose_engine, session_factory
-from ragdoctor.demo import bootstrap
+from ragdoctor.demo import bootstrap, ensure_demo_files, reset
 
 
 async def _bootstrap() -> None:
     try:
         async with session_factory()() as db:
             await bootstrap(db)
+    finally:
+        await dispose_engine()
+
+
+async def _reset() -> None:
+    try:
+        async with session_factory()() as db:
+            await reset(db)
     finally:
         await dispose_engine()
 
@@ -25,10 +33,20 @@ def main() -> None:
     command = sys.argv[1] if len(sys.argv) > 1 else ""
     if command == "bootstrap":
         asyncio.run(_bootstrap())
+        ensure_demo_files()
+    elif command == "reset":
+        if "--yes" not in sys.argv:
+            print(
+                "reset deletes documents, questions, experiments and examinations "
+                "(the model cache is kept); add --yes to confirm",
+                file=sys.stderr,
+            )
+            raise SystemExit(2)
+        asyncio.run(_reset())
     elif command == "worker":
         from ragdoctor.jobs.worker import main as worker
 
         asyncio.run(worker())
     else:
-        print("usage: ragdoctor bootstrap | worker", file=sys.stderr)
+        print("usage: ragdoctor bootstrap | worker | reset --yes", file=sys.stderr)
         raise SystemExit(2)
