@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import logging
+import secrets
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -31,10 +33,24 @@ class Settings(BaseSettings):
     admin_password: str = "doctor-admin"
     user_email: str = "reader@ragdoctor.demo"
     user_password: str = "doctor-reader"
-    jwt_secret: str = "change-me-in-production"
+    jwt_secret: str = Field(
+        default="",
+        description="Signs session cookies. Empty: a random secret per start (sessions end on "
+        "restart).",
+    )
     session_hours: int = 12
     chat_requires_login: bool = False
     cookie_secure: bool = False
+
+    @model_validator(mode="after")
+    def _session_secret(self) -> Settings:
+        if not self.jwt_secret:
+            self.jwt_secret = secrets.token_urlsafe(48)
+        elif len(self.jwt_secret.encode()) < 32:
+            logging.getLogger(__name__).warning(
+                "JWT_SECRET is shorter than 32 bytes; use a long random string"
+            )
+        return self
 
     @property
     def sqlalchemy_url(self) -> str:

@@ -40,7 +40,7 @@ def database_url() -> str:
     os.environ.update(
         DATABASE_URL=TEST_URL,
         OPENROUTER_API_KEY="",
-        JWT_SECRET="test-secret",
+        JWT_SECRET="test-secret-of-at-least-thirty-two-bytes",
         ADMIN_EMAIL="admin@test.local",
         ADMIN_PASSWORD="admin-pass",
         USER_EMAIL="user@test.local",
