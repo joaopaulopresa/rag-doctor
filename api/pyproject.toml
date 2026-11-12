@@ -58,3 +58,7 @@ asyncio_default_test_loop_scope = "session"
 testpaths = ["tests"]
 markers = ["integration: needs PostgreSQL (docker compose up -d db)"]
 addopts = "-ra --strict-markers"
+
+[tool.ruff.lint.per-file-ignores]
+# The report's stylesheet and page skeleton are long string literals.
+"src/ragdoctor/doctor/report.py" = ["E501"]
